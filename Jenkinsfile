@@ -51,26 +51,7 @@ pipeline {
                 }
             }
         }
-        stage('Compile') {
-            parallel {
-                stage('Compile') {
-                    container('java') {
-                        steps {
-                            unstash 'sources'
-                            sh 'echo javaCompile'
-                        }
-                    }
-                }
-                stage('Helm Package') {
-                    container('helm') {
-                        steps {
-                            unstash 'sources'
-                            sh 'echo helm package'
-                        }
-                    }
-                }
-            }
-        }
+       
         stage('Docker Push') {
             parallel {
                 stage('Docker Push') {
