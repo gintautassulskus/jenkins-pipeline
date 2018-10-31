@@ -53,19 +53,21 @@ pipeline {
     }
     stage('Compile') {
       parallel {
-          container('java') {
-              stage('Compile') {
-                  unstash 'sources'
-                  steps {
-                      sh 'echo javaCompile'
+          stages {
+              container('java') {
+                  stage('Compile') {
+                      steps {
+                          unstash 'sources'
+                          sh 'echo javaCompile'
+                      }
                   }
               }
-          }
-          container('helm') {
-              stage('Helm Package') {
-                  steps {
-                      unstash 'sources'
-                      sh 'echo helm package'
+              container('helm') {
+                  stage('Helm Package') {
+                      steps {
+                          unstash 'sources'
+                          sh 'echo helm package'
+                      }
                   }
               }
           }
