@@ -1,21 +1,51 @@
+#!/usr/bin/env groovy
 pipeline {
-  agent any
+  agent {
+    kubernetes {
+      label "mypod-${UUID.randomUUID().toString()}"
+      yaml """
+                apiVersion: v1
+                kind: Pod
+                metadata:
+                  labels:
+                    class: KubernetesDeclarativeAgentTest
+                spec:
+                  containers:
+                  - name: jnlp
+                    env:
+                    - name: CONTAINER_ENV_VAR
+                      value: jnlp
+                  - name: helm
+                    image: lachlanevenson/k8s-helm:latest
+                    command:
+                    - cat
+                    tty: true
+                    env:
+                    - name: CONTAINER_ENV_VAR
+                      value: helm-pod
+                """
+    }
+  }
+  options {
+    // Because there's no way for the container to actually get at the git repo on the disk of the box we're running on.
+    skipDefaultCheckout(true)
+  }
   stages {
     stage('Checkout') {
       steps {
-        git 'repoUrl'
+        checkout scm
       }
     }
     stage('Compile') {
       parallel {
         stage('Compile') {
           steps {
-            sh '#gradle javaCompile'
+            sh 'echo javaCompile'
           }
         }
         stage('Helm Package') {
           steps {
-            sh 'helm package'
+            sh 'echo helm package'
           }
         }
       }
@@ -24,24 +54,24 @@ pipeline {
       parallel {
         stage('Docker Push') {
           steps {
-            sh 'Docker push'
+            sh 'echo Docker push'
           }
         }
         stage('Java Unit Test') {
           steps {
-            sh 'unit tests'
+            sh 'echo unit tests'
           }
         }
         stage('Java Integration Tests') {
           steps {
-            sh 'int tests'
+            sh 'echo int tests'
           }
         }
       }
     }
     stage('Helm Install') {
       steps {
-        sh 'helm install'
+        sh 'echo helm install'
       }
     }
   }
