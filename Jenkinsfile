@@ -47,26 +47,28 @@ pipeline {
                 }
             }
         }
-//        stage('Compile') {
-//            parallel {
-//                stage('Compile') {
-//                    container('java') {
-//                        steps {
-//                            unstash 'sources'
-//                            sh 'echo javaCompile'
-//                        }
-//                    }
-//                }
-//                stage('Helm Package') {
-//                    container('helm') {
-//                        steps {
-//                            unstash 'sources'
-//                            sh 'echo helm package'
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        stage('Compile') {
+            parallel {
+                stage('Compile') {
+                    steps {
+                        container('java') {
+                            unstash 'sources'
+                            sh 'ls -la'
+                            sh 'echo javaCompile'
+                        }
+                    }
+                }
+                stage('Helm Package') {
+                    steps {
+                        container('helm') {
+                            unstash 'sources'
+                            sh 'ls -la'
+                            sh 'echo helm package'
+                        }
+                    }
+                }
+            }
+        }
         stage('Docker Push') {
             parallel {
                 stage('Docker Push') {
