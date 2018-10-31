@@ -11,17 +11,30 @@ pipeline {
                 spec:
                   containers:
                   - name: jnlp
-                    env:
-                    - name: CONTAINER_ENV_VAR
-                      value: jnlp
-                  - name: helm
-                    image: lachlanevenson/k8s-helm:latest
+                    image: jenkinsci/jnlp-slave:3.27-1-alpine
                     command:
                     - cat
                     tty: true
-                    env:
-                    - name: CONTAINER_ENV_VAR
-                      value: helm-pod
+                  - name: git
+                    image: alpine/git:1.0.4
+                    command:
+                    - cat
+                    tty: true
+                  - name: java
+                    image: openjdk:8-jdk-slim
+                    command:
+                    - cat
+                    tty: true
+                  - name: docker
+                    image: alpine:3.8
+                    command:
+                    - cat
+                    tty: true
+                  - name: helm
+                    image: dtzar/helm-kubectl:2.11.0
+                    command:
+                    - cat
+                    tty: true
                 """
     }
   }
@@ -31,22 +44,31 @@ pipeline {
   }
   stages {
     stage('Checkout') {
-      steps {
-        checkout scm
+      container('git') {
+        steps {
+          checkout scm
+          stash name: 'sources', includes: '**', excludes: '**/.git,**/.git/**'
+        }
       }
     }
     stage('Compile') {
       parallel {
-        stage('Compile') {
-          steps {
-            sh 'echo javaCompile'
+          container('java') {
+              stage('Compile') {
+                  unstash 'sources'
+                  steps {
+                      sh 'echo javaCompile'
+                  }
+              }
           }
-        }
-        stage('Helm Package') {
-          steps {
-            sh 'echo helm package'
+          container('helm') {
+              stage('Helm Package') {
+                  steps {
+                      unstash 'sources'
+                      sh 'echo helm package'
+                  }
+              }
           }
-        }
       }
     }
     stage('Docker Push') {
