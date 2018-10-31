@@ -1,8 +1,8 @@
 pipeline {
-  agent {
-    kubernetes {
-      label "mypod-${UUID.randomUUID().toString()}"
-      yaml """
+    agent {
+        kubernetes {
+            label "mypod-${UUID.randomUUID().toString()}"
+            yaml """
                 apiVersion: v1
                 kind: Pod
                 metadata:
@@ -36,66 +36,64 @@ pipeline {
                     - cat
                     tty: true
                 """
-    }
-  }
-  options {
-    // Because there's no way for the container to actually get at the git repo on the disk of the box we're running on.
-    skipDefaultCheckout(true)
-  }
-  stages {
-    stage('Checkout') {
-      container('git') {
-        steps {
-          checkout scm
-          stash name: 'sources', includes: '**', excludes: '**/.git,**/.git/**'
         }
-      }
     }
-    stage('Compile') {
-      parallel {
-          stages {
-              container('java') {
-                  stage('Compile') {
-                      steps {
-                          unstash 'sources'
-                          sh 'echo javaCompile'
-                      }
-                  }
-              }
-              container('helm') {
-                  stage('Helm Package') {
-                      steps {
-                          unstash 'sources'
-                          sh 'echo helm package'
-                      }
-                  }
-              }
-          }
-      }
+    options {
+        // Because there's no way for the container to actually get at the git repo on the disk of the box we're running on.
+        skipDefaultCheckout(true)
     }
-    stage('Docker Push') {
-      parallel {
+    stages {
+        stage('Checkout') {
+            container('git') {
+                steps {
+                    checkout scm
+                    stash name: 'sources', includes: '**', excludes: '**/.git,**/.git/**'
+                }
+            }
+        }
+        stage('Compile') {
+            parallel {
+                stage('Compile') {
+                    container('java') {
+                        steps {
+                            unstash 'sources'
+                            sh 'echo javaCompile'
+                        }
+                    }
+                }
+                stage('Helm Package') {
+                    container('helm') {
+                        steps {
+                            unstash 'sources'
+                            sh 'echo helm package'
+                        }
+                    }
+                }
+            }
+        }
         stage('Docker Push') {
-          steps {
-            sh 'echo Docker push'
-          }
+            parallel {
+                stage('Docker Push') {
+                    steps {
+                        sh 'echo Docker push'
+                    }
+                }
+                stage('Java Unit Test') {
+                    steps {
+                        sh 'echo unit tests'
+                    }
+                }
+                stage('Java Integration Tests') {
+                    steps {
+                        sh 'echo int tests'
+                    }
+                }
+            }
         }
-        stage('Java Unit Test') {
-          steps {
-            sh 'echo unit tests'
-          }
+        stage('Helm Install') {
+            steps {
+                sh 'echo helm install'
+            }
         }
-        stage('Java Integration Tests') {
-          steps {
-            sh 'echo int tests'
-          }
-        }
-      }
     }
-    stage('Helm Install') {
-      steps {
-        sh 'echo helm install'
-      }
-    }
-  }
 }
