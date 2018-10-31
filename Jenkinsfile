@@ -2,6 +2,7 @@ pipeline {
     agent {
         kubernetes {
             label "mypod-${UUID.randomUUID().toString()}"
+            defaultContainer 'jnlp'
             yaml """
                 apiVersion: v1
                 kind: Pod
@@ -10,11 +11,6 @@ pipeline {
                     class: KubernetesDeclarativeAgentTest
                 spec:
                   containers:
-                  - name: jnlp
-                    image: jenkinsci/jnlp-slave:3.27-1-alpine
-                    command:
-                    - cat
-                    tty: true
                   - name: git
                     image: alpine/git:1.0.4
                     command:
